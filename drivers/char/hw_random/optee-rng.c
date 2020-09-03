@@ -122,14 +122,14 @@ static int optee_rng_read(struct hwrng *rng, void *buf, size_t max, bool wait)
 	if (max > MAX_ENTROPY_REQ_SZ)
 		max = MAX_ENTROPY_REQ_SZ;
 
-	while (read == 0) {
+	while (read < max) {
 		rng_size = get_optee_rng_data(pvt_data, data, (max - read));
 
 		data += rng_size;
 		read += rng_size;
 
-		if (wait) {
-			if (timeout-- == 0)
+		if (wait && pvt_data->data_rate) {
+			if ((timeout-- == 0) || (read == max))
 				return read;
 			msleep((1000 * (max - read)) / pvt_data->data_rate);
 		} else {
@@ -273,6 +273,8 @@ static int optee_rng_remove(struct device *dev)
 static const struct tee_client_device_id optee_rng_id_table[] = {
 	{UUID_INIT(0xab7a617c, 0xb8e7, 0x4d8f,
 		   0x83, 0x01, 0xd0, 0x9b, 0x61, 0x03, 0x6b, 0x64)},
+	{UUID_INIT(0x035a4479, 0xc369, 0x47f4,
+		   0x94, 0x51, 0xc6, 0xfd, 0xff, 0x28, 0xad, 0x65)},
 	{}
 };
 
